@@ -1,0 +1,108 @@
+<%- include('../layouts/header') %>
+
+<div class="auth-wrapper" style="max-width: 600px;">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="brand-shield" style="margin: 0 auto 1rem; width: 44px; height: 44px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <h1>Enable Two-Factor Authentication</h1>
+      <p>Secure account <strong><%= userEmail %></strong> with TOTP</p>
+    </div>
+
+    <!-- Step 1: Install Authenticator App -->
+    <div style="margin-bottom: 1.75rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+      <h3 style="font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: var(--primary); color: white; border-radius: 50%; font-size: 0.8rem; font-weight: bold;">1</span>
+        Download an Authenticator App
+      </h3>
+      <p style="font-size: 0.875rem; margin-left: 2rem;">
+        Install <strong>Google Authenticator</strong>, <strong>Microsoft Authenticator</strong>, or <strong>Authy</strong> on your mobile phone via Google Play Store or Apple App Store.
+      </p>
+    </div>
+
+    <!-- Step 2: Scan QR Code or Copy Secret -->
+    <div style="margin-bottom: 1.75rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+      <h3 style="font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: var(--primary); color: white; border-radius: 50%; font-size: 0.8rem; font-weight: bold;">2</span>
+        Scan QR Code with Authenticator
+      </h3>
+
+      <div style="text-align: center; margin: 1rem 0;">
+        <div style="display: inline-block; padding: 0.75rem; background: white; border: 2px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+          <img src="<%= qrCode %>" alt="2FA QR Code" width="200" height="200" style="display: block; max-width: 100%; height: auto;">
+        </div>
+      </div>
+
+      <p style="font-size: 0.875rem; text-align: center; color: var(--text-muted); margin-bottom: 0.75rem;">
+        Can't scan the QR code? Enter this setup key manually into your app:
+      </p>
+
+      <div class="secret-display">
+        <span id="secretKeyText" class="secret-key"><%= secret %></span>
+        <div style="display: flex; gap: 0.5rem;">
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            data-copy="#secretKeyText"
+            title="Copy secret key"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copy
+          </button>
+          <a
+            href="/2fa/setup?regenerate=1"
+            class="btn btn-secondary btn-sm"
+            title="Generate a different QR code and secret key"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+            Reset
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Verify First OTP -->
+    <div>
+      <h3 style="font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: var(--primary); color: white; border-radius: 50%; font-size: 0.8rem; font-weight: bold;">3</span>
+        Enter 6-Digit Verification Code
+      </h3>
+      <p style="font-size: 0.875rem; margin-left: 2rem; margin-bottom: 1rem;">
+        Enter the temporary 6-digit code shown in your authenticator app to confirm setup.
+      </p>
+
+      <form action="/2fa/verify-setup" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="token" class="otp-hidden-value" value="">
+
+        <div class="otp-container">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" autocomplete="one-time-code" autofocus>
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.25rem;">
+          Verify &amp; Activate 2FA
+        </button>
+      </form>
+    </div>
+
+    <div class="auth-footer">
+      <a href="/dashboard" class="btn btn-secondary btn-sm">Cancel and Return to Dashboard</a>
+    </div>
+  </div>
+</div>
+
+<%- include('../layouts/footer') %>

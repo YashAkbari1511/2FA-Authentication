@@ -1,0 +1,310 @@
+<%- include('../layouts/header') %>
+
+<div class="dashboard-layout">
+  <!-- Sidebar Navigation -->
+  <aside class="dashboard-sidebar">
+    <div class="sidebar-card">
+      <div class="user-mini-profile">
+        <div class="user-avatar">
+          <%= user.name.charAt(0).toUpperCase() %>
+        </div>
+        <h3 style="font-size: 1.1rem; margin-bottom: 0.25rem;"><%= user.name %></h3>
+        <p style="font-size: 0.8125rem; color: var(--text-muted); word-break: break-all;"><%= user.email %></p>
+        
+        <div style="margin-top: 0.75rem;">
+          <% if (user.twoFactorEnabled) { %>
+            <span class="badge badge-success">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              2FA Protected
+            </span>
+          <% } else { %>
+            <span class="badge badge-warning">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              2FA Disabled
+            </span>
+          <% } %>
+        </div>
+      </div>
+
+      <ul class="sidebar-nav">
+        <li>
+          <a href="/dashboard" class="sidebar-nav-link active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+            Security Overview
+          </a>
+        </li>
+        <li>
+          <a href="/info" class="sidebar-nav-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            How 2FA Works &amp; Guide
+          </a>
+        </li>
+        <% if (user.twoFactorEnabled) { %>
+          <li>
+            <a href="#recovery-section" class="sidebar-nav-link">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Recovery Codes (<%= recoveryStats.remaining %>)
+            </a>
+          </li>
+          <li>
+            <a href="/2fa/disable" class="sidebar-nav-link" style="color: var(--danger);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+              Disable 2FA
+            </a>
+          </li>
+        <% } else { %>
+          <li>
+            <a href="/2fa/setup" class="sidebar-nav-link" style="color: var(--primary);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Setup 2FA
+            </a>
+          </li>
+        <% } %>
+        <li style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+          <form action="/auth/logout" method="POST" style="width: 100%;">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="sidebar-nav-link" style="width: 100%; background: none; border: none; cursor: pointer; text-align: left;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Sign Out
+            </button>
+          </form>
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="dashboard-main">
+    <!-- Top Welcome Card -->
+    <div class="dashboard-header-card">
+      <div class="dashboard-title">
+        <h1>Welcome, <%= user.name %></h1>
+        <p>Manage your account security and two-factor authentication settings.</p>
+      </div>
+      <div>
+        <span class="badge badge-success" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          Session Authenticated
+        </span>
+      </div>
+    </div>
+
+    <!-- Security Metrics Grid -->
+    <div class="metrics-grid">
+      <!-- Card 1: 2FA Status -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <div>
+            <span style="font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Authentication</span>
+            <h3 style="margin-top: 0.25rem;">Two-Factor (2FA)</h3>
+          </div>
+          <div class="metric-icon-box <%= user.twoFactorEnabled ? 'success' : 'warning' %>">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="metric-body">
+          <% if (user.twoFactorEnabled) { %>
+            <p><strong>Active:</strong> Your account requires a 6-digit TOTP code on every login.</p>
+          <% } else { %>
+            <p><strong>Inactive:</strong> Your account is currently protected only by your password.</p>
+          <% } %>
+        </div>
+
+        <div class="metric-footer">
+          <% if (user.twoFactorEnabled) { %>
+            <span class="badge badge-success">Enabled</span>
+            <a href="/2fa/disable" class="btn btn-danger-outline btn-sm">Disable 2FA</a>
+          <% } else { %>
+            <span class="badge badge-warning">Action Recommended</span>
+            <a href="/2fa/setup" class="btn btn-primary btn-sm">Enable 2FA</a>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Card 2: Emergency Recovery Codes -->
+      <div class="metric-card" id="recovery-section">
+        <div class="metric-header">
+          <div>
+            <span style="font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Backup Access</span>
+            <h3 style="margin-top: 0.25rem;">Recovery Codes</h3>
+          </div>
+          <div class="metric-icon-box <%= user.twoFactorEnabled && recoveryStats.remaining > 0 ? 'primary' : 'warning' %>">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="metric-body">
+          <% if (user.twoFactorEnabled) { %>
+            <div style="display: flex; gap: 1rem; align-items: baseline;">
+              <span style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);"><%= recoveryStats.remaining %></span>
+              <span style="font-size: 0.875rem; color: var(--text-muted);">of <%= recoveryStats.total %> codes remaining</span>
+            </div>
+            <p style="font-size: 0.8125rem; margin-top: 0.35rem;">
+              <%= recoveryStats.used %> code(s) already consumed for authentication.
+            </p>
+          <% } else { %>
+            <p>Recovery codes will be generated automatically once 2FA is activated.</p>
+          <% } %>
+        </div>
+
+        <div class="metric-footer">
+          <% if (user.twoFactorEnabled) { %>
+            <button type="button" class="btn btn-secondary btn-sm" data-modal-open="regenerateModal">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+              Regenerate Codes
+            </button>
+          <% } else { %>
+            <span style="font-size: 0.8125rem; color: var(--text-muted);">Requires active 2FA</span>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Card 3: Account Metadata -->
+      <div class="metric-card">
+        <div class="metric-header">
+          <div>
+            <span style="font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Session Security</span>
+            <h3 style="margin-top: 0.25rem;">Active Session</h3>
+          </div>
+          <div class="metric-icon-box primary">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="metric-body">
+          <p style="font-size: 0.875rem; margin-bottom: 0.25rem;">
+            <strong>Session ID:</strong> <code><%= sessionId %></code>
+          </p>
+          <p style="font-size: 0.875rem; margin-bottom: 0.25rem;">
+            <strong>Member Since:</strong> <%= new Date(user.createdAt).toLocaleDateString() %>
+          </p>
+          <p style="font-size: 0.875rem;">
+            <strong>Storage:</strong> MongoDB (connect-mongo)
+          </p>
+        </div>
+
+        <div class="metric-footer">
+          <span class="badge badge-info">HTTP-Only Cookie</span>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">SameSite=Lax</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security Action Details Section -->
+    <div class="content-section">
+      <div class="section-header">
+        <h2 class="section-title">Two-Factor Authentication Controls</h2>
+      </div>
+
+      <% if (user.twoFactorEnabled) { %>
+        <div class="two-factor-banner enabled">
+          <div class="banner-icon" style="color: var(--success);">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <polyline points="9 11 12 14 22 4"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <h4 style="font-size: 1.1rem; margin-bottom: 0.25rem; color: #14532d;">Two-Factor Authentication is Active</h4>
+            <p style="font-size: 0.9rem; color: #166534;">
+              Your account is fortified against password leaks. You need your authenticator app (Google Authenticator, Microsoft Authenticator) or an emergency recovery code to sign in.
+            </p>
+          </div>
+          <div>
+            <a href="/2fa/disable" class="btn btn-danger-outline">Disable 2FA</a>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; flex-wrap: wrap;">
+          <div>
+            <h4 style="font-size: 1rem; margin-bottom: 0.25rem;">Emergency Recovery Codes</h4>
+            <p style="font-size: 0.875rem; color: var(--text-secondary);">
+              You have <strong><%= recoveryStats.remaining %></strong> single-use recovery code(s) remaining. If you lose your phone or are running low on codes, regenerate a new batch.
+            </p>
+          </div>
+          <button type="button" class="btn btn-secondary" data-modal-open="regenerateModal">
+            Regenerate Recovery Codes
+          </button>
+        </div>
+      <% } else { %>
+        <div class="two-factor-banner disabled">
+          <div class="banner-icon" style="color: var(--warning);">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <h4 style="font-size: 1.1rem; margin-bottom: 0.25rem; color: #78350f;">Two-Factor Authentication is Not Enabled</h4>
+            <p style="font-size: 0.9rem; color: #92400e;">
+              Your account currently relies on a single password factor. We strongly recommend enabling TOTP 2FA to protect against credential stuffing and brute-force attacks.
+            </p>
+          </div>
+          <div>
+            <a href="/2fa/setup" class="btn btn-primary">Enable 2FA Now</a>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </main>
+</div>
+
+<!-- Modal: Regenerate Recovery Codes -->
+<div id="regenerateModal" class="modal-backdrop">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 style="font-size: 1.25rem;">Regenerate Recovery Codes</h3>
+      <button type="button" class="modal-close-btn" data-modal-close aria-label="Close modal">&times;</button>
+    </div>
+
+    <div style="background-color: var(--warning-bg); border: 1px solid var(--warning-border); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.8125rem; color: #92400e;">
+      <strong>Notice:</strong> Generating new recovery codes will immediately invalidate all existing unused recovery codes. For security, please confirm your current credentials.
+    </div>
+
+    <form action="/2fa/recovery-codes" method="POST">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="token" class="otp-hidden-value" value="">
+
+      <div class="form-group">
+        <label for="regenPassword" class="form-label">Account Password</label>
+        <input
+          type="password"
+          id="regenPassword"
+          name="password"
+          class="form-control"
+          placeholder="Enter your account password"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Current 6-Digit Authenticator Code</label>
+        <div class="otp-container" style="margin: 0.5rem 0 1rem;">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+        <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Generate New Codes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../layouts/footer') %>

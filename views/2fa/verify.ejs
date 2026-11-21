@@ -1,0 +1,98 @@
+<%- include('../layouts/header') %>
+
+<div class="auth-wrapper" style="max-width: 520px;">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="brand-shield" style="margin: 0 auto 1rem; width: 48px; height: 48px; background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v4"/>
+          <path d="M12 16h.01"/>
+        </svg>
+      </div>
+      <h1>Two-Factor Verification</h1>
+      <p>Verifying identity for <strong><%= pendingEmail %></strong></p>
+    </div>
+
+    <!-- Mode Selector Tabs -->
+    <div class="tabs-nav">
+      <button
+        type="button"
+        class="tab-btn active"
+        data-tab-target="tab-otp"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        Authenticator OTP
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        data-tab-target="tab-recovery"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Use Recovery Code
+      </button>
+    </div>
+
+    <!-- Panel 1: OTP Code Verification -->
+    <div id="tab-otp" class="tab-panel">
+      <p style="font-size: 0.9rem; text-align: center; color: var(--text-secondary); margin-bottom: 1.25rem;">
+        Open your authenticator app and enter the 6-digit numeric security code.
+      </p>
+
+      <form action="/2fa/verify-login" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="token" class="otp-hidden-value" value="">
+
+        <div class="otp-container">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box" autocomplete="one-time-code" autofocus>
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+          <input type="text" inputmode="numeric" maxlength="1" class="otp-box">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.25rem;">
+          Verify &amp; Sign In
+        </button>
+      </form>
+    </div>
+
+    <!-- Panel 2: Recovery Code Verification -->
+    <div id="tab-recovery" class="tab-panel" style="display: none;">
+      <div style="background-color: var(--warning-bg); border: 1px solid var(--warning-border); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.8125rem; color: #92400e;">
+        <strong>Emergency Access:</strong> Enter one of your unused 8-digit emergency recovery codes (e.g. <code>ABCD-1234</code>). Each code can only be used once.
+      </div>
+
+      <form action="/2fa/verify-recovery" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+        <div class="form-group">
+          <label for="recoveryCode" class="form-label">Recovery Code</label>
+          <input
+            type="text"
+            id="recoveryCode"
+            name="recoveryCode"
+            class="form-control"
+            placeholder="e.g. 7X3K-9B2F"
+            style="font-family: var(--font-mono); font-weight: 700; text-transform: uppercase; font-size: 1.1rem; text-align: center; letter-spacing: 0.1em;"
+            required
+            autocomplete="off"
+          >
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.25rem;">
+          Verify Recovery Code
+        </button>
+      </form>
+    </div>
+
+    <div class="auth-footer" style="display: flex; justify-content: space-between; align-items: center;">
+      <a href="/auth/login" class="btn btn-secondary btn-sm">Cancel Login</a>
+      <span style="font-size: 0.8rem; color: var(--text-muted);">Protected by Speakeasy TOTP</span>
+    </div>
+  </div>
+</div>
+
+<%- include('../layouts/footer') %>

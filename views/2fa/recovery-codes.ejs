@@ -1,0 +1,81 @@
+<%- include('../layouts/header') %>
+
+<div class="auth-wrapper" style="max-width: 650px;">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="brand-shield" style="margin: 0 auto 1rem; width: 48px; height: 48px; background: linear-gradient(135deg, #16a34a, #15803d);">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <h1>Your Emergency Recovery Codes</h1>
+      <p>Save these codes in a secure password manager or offline location</p>
+    </div>
+
+    <!-- Alert / Warning Banner -->
+    <div class="alert alert-warning" style="margin-bottom: 1.5rem;">
+      <div class="alert-content">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <div>
+          <strong>Important Security Notice:</strong>
+          <div style="font-size: 0.85rem; margin-top: 2px;">
+            These codes will <strong>only be shown once</strong>. If you lose access to your authenticator device, each recovery code can be used exactly once to log in.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recovery Codes Grid -->
+    <div class="recovery-grid" id="recoveryCodesContainer">
+      <% recoveryCodes.forEach(function(code, idx) { %>
+        <div class="recovery-code-pill" data-code="<%= code %>">
+          <span style="font-size: 0.75rem; color: var(--text-muted); margin-right: 4px;"><%= idx + 1 %>.</span> <%= code %>
+        </div>
+      <% }); %>
+    </div>
+
+    <!-- Action Buttons: Copy All, Download .txt -->
+    <div style="display: flex; gap: 0.75rem; justify-content: center; margin: 1.5rem 0; flex-wrap: wrap;">
+      <button
+        type="button"
+        id="downloadCodesBtn"
+        class="btn btn-secondary"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download as .txt
+      </button>
+
+      <button
+        type="button"
+        id="copyAllCodesBtn"
+        class="btn btn-secondary"
+        data-copy="<%= recoveryCodes.join('\n') %>"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        Copy All Codes
+      </button>
+    </div>
+
+    <!-- Confirmation Form -->
+    <form action="/2fa/confirm-recovery" method="POST">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1rem;">
+        ✓ I Have Saved My Recovery Codes &bull; Continue to Dashboard
+      </button>
+    </form>
+  </div>
+</div>
+
+<%- include('../layouts/footer') %>

@@ -1,0 +1,28 @@
+<%- include('layouts/header') %>
+
+<div class="auth-wrapper" style="max-width: 520px; text-align: center;">
+  <div class="auth-card" style="padding: 3rem 2rem;">
+    <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--danger-bg); color: var(--danger); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 1.75rem; font-weight: bold;">
+      <%= typeof statusCode !== 'undefined' ? statusCode : '!' %>
+    </div>
+    
+    <h1 style="font-size: 1.75rem; margin-bottom: 0.75rem;">
+      <%= typeof title !== 'undefined' ? title : 'An Error Occurred' %>
+    </h1>
+    
+    <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+      <%= typeof message !== 'undefined' ? message : 'The page you requested could not be found or an unexpected error occurred.' %>
+    </p>
+
+    <div style="display: flex; justify-content: center; gap: 1rem;">
+      <a href="/" class="btn btn-primary">Return Home</a>
+      <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+        <a href="/dashboard" class="btn btn-secondary">Go to Dashboard</a>
+      <% } else { %>
+        <a href="/auth/login" class="btn btn-secondary">Sign In</a>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('layouts/footer') %>

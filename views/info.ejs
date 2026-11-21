@@ -1,0 +1,544 @@
+<%- include('layouts/header') %>
+
+<div class="info-container">
+  <!-- Page Header -->
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: var(--primary-light); color: var(--primary); padding: 0.35rem 0.85rem; border-radius: var(--radius-full); font-size: 0.875rem; font-weight: 600; margin-bottom: 0.75rem;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      RFC 6238 TOTP Specification &amp; Implementation
+    </div>
+    <h1 style="font-size: 2.25rem; margin-bottom: 0.5rem;">How Two-Factor Authentication Works</h1>
+    <p style="font-size: 1.05rem; color: var(--text-secondary); max-width: 680px; margin: 0 auto;">
+      A comprehensive guide covering the TOTP algorithm, npm security packages, and end-to-end implementation architecture.
+    </p>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="tabs-nav" style="max-width: 650px; margin: 0 auto 2rem;">
+    <button type="button" class="tab-btn active" data-tab-target="tab-how-it-works">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      1. How 2FA Works
+    </button>
+    <button type="button" class="tab-btn" data-tab-target="tab-packages">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+      2. Packages Used
+    </button>
+    <button type="button" class="tab-btn" data-tab-target="tab-implementation">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      3. Implementation Guide
+    </button>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TAB 1: HOW 2FA WORKS                       -->
+  <!-- ========================================== -->
+  <div id="tab-how-it-works" class="tab-panel">
+    <div class="info-card">
+      <h2 style="font-size: 1.5rem; margin-bottom: 0.75rem;">1. The Core Architecture of TOTP (RFC 6238)</h2>
+      <p style="margin-bottom: 1.25rem;">
+        Time-Based One-Time Password (TOTP) is an open internet standard (RFC 6238) extension of HMAC-Based One-Time Password (HOTP, RFC 4226). Instead of using an incrementing sequence counter, it uses the <strong>current Unix timestamp</strong> divided into 30-second intervals as the counter.
+      </p>
+
+      <div style="background: #f1f5f9; border-left: 4px solid var(--primary); padding: 1rem 1.25rem; border-radius: 0 var(--radius-md) var(--radius-md) 0; margin-bottom: 1.5rem;">
+        <h4 style="font-size: 1rem; color: var(--text-primary); margin-bottom: 0.25rem;">Mathematical Formula</h4>
+        <code style="font-family: var(--font-mono); font-size: 0.95rem; font-weight: 600; color: #1e40af;">
+          Counter (C) = ⌊ (Current Unix Time - T0) / X ⌋
+        </code>
+        <p style="font-size: 0.8125rem; color: var(--text-secondary); margin-top: 0.35rem;">
+          Where <code>T0 = 0</code> (Unix Epoch Jan 1, 1970) and time-step <code>X = 30 seconds</code>.
+          Then: <code>OTP = Truncate(HMAC-SHA-1(Shared_Secret, Counter)) mod 10^6</code>.
+        </p>
+      </div>
+
+      <h3 style="font-size: 1.25rem; margin-top: 2rem; margin-bottom: 1rem;">The Complete Lifecycle</h3>
+
+      <div class="flow-step-box">
+        <div class="flow-step-num">1</div>
+        <div>
+          <h4 style="font-size: 1.05rem; margin-bottom: 0.25rem;">Secret Generation &amp; QR Exchange</h4>
+          <p style="font-size: 0.875rem;">
+            When a user requests 2FA setup, the server generates a cryptographically random 20-byte key (Base32 encoded). The server bundles this secret into a standardized URI:
+            <code>otpauth://totp/AppName:user@email.com?secret=BASE32KEY&amp;issuer=AppName</code>.
+            This URI is rendered as a QR code for quick scanning with mobile authenticators (Google Authenticator, Microsoft Authenticator, 1Password, Authy).
+          </p>
+        </div>
+      </div>
+
+      <div class="flow-step-box">
+        <div class="flow-step-num">2</div>
+        <div>
+          <h4 style="font-size: 1.05rem; margin-bottom: 0.25rem;">Synchronized Autonomous Calculation</h4>
+          <p style="font-size: 0.875rem;">
+            No internet connection or SMS network is needed! The user's authenticator app and the server both know the <strong>same shared secret</strong> and the <strong>current time</strong>. Every 30 seconds, both independently hash the timestamp with the secret, producing the exact same 6-digit code.
+          </p>
+        </div>
+      </div>
+
+      <div class="flow-step-box">
+        <div class="flow-step-num">3</div>
+        <div>
+          <h4 style="font-size: 1.05rem; margin-bottom: 0.25rem;">Clock Drift Window Tolerance</h4>
+          <p style="font-size: 0.875rem;">
+            Because the client phone clock and server clock might differ by a few seconds, the server uses a verification window of <code>window: 1</code>. This verifies tokens from <code>[now - 30s, now, now + 30s]</code> (a 90-second total validity window), avoiding frustrating false rejections.
+          </p>
+        </div>
+      </div>
+
+      <div class="flow-step-box">
+        <div class="flow-step-num">4</div>
+        <div>
+          <h4 style="font-size: 1.05rem; margin-bottom: 0.25rem;">Authenticated Encryption at Rest (AES-256-GCM)</h4>
+          <p style="font-size: 0.875rem;">
+            The shared secret key must <strong>never</strong> be stored in plaintext in the database. If an attacker dumps the database, plaintext secrets would compromise all accounts. This application encrypts the secret using AES-256-GCM with a unique 96-bit initialization vector (IV) and a 128-bit authentication tag before saving to MongoDB.
+          </p>
+        </div>
+      </div>
+
+      <div class="flow-step-box">
+        <div class="flow-step-num">5</div>
+        <div>
+          <h4 style="font-size: 1.05rem; margin-bottom: 0.25rem;">Single-Use Emergency Recovery Codes</h4>
+          <p style="font-size: 0.875rem;">
+            If users lose or damage their phone, they could be permanently locked out. The app generates 10 high-entropy recovery codes (e.g. <code>ABCD-1234</code>). Codes are hashed using <strong>bcrypt</strong> (just like passwords) and marked consumed upon use.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TAB 2: PACKAGES USED & PURPOSE             -->
+  <!-- ========================================== -->
+  <div id="tab-packages" class="tab-panel" style="display: none;">
+    <div class="info-card">
+      <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Packages &amp; Libraries Used</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+        Each dependency was chosen to fulfill critical security, session management, and verification responsibilities.
+      </p>
+
+      <div class="packages-grid">
+        <!-- 1. speakeasy -->
+        <div class="package-card">
+          <div class="package-header">
+            <span class="package-name">speakeasy</span>
+            <span class="badge badge-info">^2.0.0</span>
+          </div>
+          <p class="package-desc">
+            Industry standard Node.js library for Two-Factor Authentication. Implements RFC 4226 (HOTP) and RFC 6238 (TOTP).
+          </p>
+          <ul class="package-features">
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><code>generateSecret()</code> creates 20-byte Base32 secret keys</span>
+            </li>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><code>otpauthURL()</code> constructs compliant URI with issuer</span>
+            </li>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><code>totp.verify()</code> verifies 6-digit tokens with clock drift</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 2. qrcode -->
+        <div class="package-card">
+          <div class="package-header">
+            <span class="package-name">qrcode</span>
+            <span class="badge badge-info">^1.5.4</span>
+          </div>
+          <p class="package-desc">
+            Generates 2D barcode images directly in memory without saving temporary image files to the filesystem.
+          </p>
+          <ul class="package-features">
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><code>toDataURL()</code> converts <code>otpauth://</code> URI to Base64 image</span>
+            </li>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Zero filesystem footprint &bull; Rendered directly in HTML <code>&lt;img&gt;</code></span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 3. crypto (built-in) -->
+        <div class="package-card">
+          <div class="package-header">
+            <span class="package-name">crypto (Node.js)</span>
+            <span class="badge badge-success">Built-in</span>
+          </div>
+          <p class="package-desc">
+            Native Node.js cryptography module used for AES-256-GCM encryption at rest and CSRF token generation.
+          </p>
+          <ul class="package-features">
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><code>createCipheriv('aes-256-gcm')</code> authenticated encryption</span>
+            </li>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><code>randomBytes(32)</code> for cryptographically secure CSRF tokens</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 4. bcrypt -->
+        <div class="package-card">
+          <div class="package-header">
+            <span class="package-name">bcrypt</span>
+            <span class="badge badge-info">^6.0.0</span>
+          </div>
+          <p class="package-desc">
+            Adaptive password hashing library using OpenBSD bcrypt. Protects user credentials and emergency recovery codes.
+          </p>
+          <ul class="package-features">
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Work factor 12 rounds for user passwords</span>
+            </li>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Hashes recovery codes in DB so plain codes are never stored</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 5. express-session & connect-mongo -->
+        <div class="package-card">
+          <div class="package-header">
+            <span class="package-name">connect-mongo</span>
+            <span class="badge badge-info">^6.0.0</span>
+          </div>
+          <p class="package-desc">
+            MongoDB-backed session store for <code>express-session</code>. Preserves sessions across server restarts.
+          </p>
+          <ul class="package-features">
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Stores sessions in MongoDB <code>sessions</code> collection with TTL</span>
+            </li>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><code>httpOnly: true</code>, <code>sameSite: 'lax'</code> prevents XSS extraction</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 6. express-rate-limit -->
+        <div class="package-card">
+          <div class="package-header">
+            <span class="package-name">express-rate-limit</span>
+            <span class="badge badge-info">^8.7.4</span>
+          </div>
+          <p class="package-desc">
+            Middleware to limit repeated requests to public APIs and endpoints like login, OTP submission, and password resets.
+          </p>
+          <ul class="package-features">
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Throttles OTP guesses to 10 attempts per 15 minutes</span>
+            </li>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Throttles recovery code attempts to 5 per 15 minutes</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 7. helmet -->
+        <div class="package-card">
+          <div class="package-header">
+            <span class="package-name">helmet</span>
+            <span class="badge badge-info">^8.3.0</span>
+          </div>
+          <p class="package-desc">
+            Secures Express apps by setting various HTTP headers (Content Security Policy, X-Frame-Options, HSTS).
+          </p>
+          <ul class="package-features">
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>CSP configured to permit inline QR code data URLs</span>
+            </li>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Blocks clickjacking and cross-site content injection</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 8. mongoose -->
+        <div class="package-card">
+          <div class="package-header">
+            <span class="package-name">mongoose</span>
+            <span class="badge badge-info">^9.12.2</span>
+          </div>
+          <p class="package-desc">
+            Object Data Modeling (ODM) library for MongoDB providing schema validation, subdocuments, and lifecycle hooks.
+          </p>
+          <ul class="package-features">
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>User model with subdocuments for recovery codes</span>
+            </li>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Async pre-save hooks for automatic password hashing</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TAB 3: STEP-BY-STEP IMPLEMENTATION GUIDE   -->
+  <!-- ========================================== -->
+  <div id="tab-implementation" class="tab-panel" style="display: none;">
+    <div class="info-card">
+      <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">How to Implement 2FA Step-by-Step</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+        Follow this 6-step blueprint to build production-grade 2FA into any Node.js &amp; Express application.
+      </p>
+
+      <!-- Step 1 -->
+      <div style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span class="flow-step-num" style="width: 28px; height: 28px; font-size: 0.85rem;">1</span>
+          Generate the TOTP Secret &amp; QR Code
+        </h3>
+        <p style="font-size: 0.875rem; margin: 0.5rem 0;">
+          Create a Base32 secret and encode it into an <code>otpauth://</code> format URL with your app name and user email:
+        </p>
+        <div class="code-container">
+          <div class="code-header">
+            <span>services/twoFactorService.js</span>
+            <button type="button" data-copy="#codeStep1">Copy</button>
+          </div>
+          <pre class="code-block" id="codeStep1">const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
+
+function getTOTPAuthUrl(userEmail, base32Secret) {
+  return speakeasy.otpauthURL({
+    secret: base32Secret,
+    label: `2FA Demo App (${userEmail})`,
+    issuer: '2FA Demo App',
+    encoding: 'base32',
+  });
+}
+
+function generateTOTPSecret(userEmail) {
+  const secret = speakeasy.generateSecret({ length: 20 });
+  return {
+    base32: secret.base32,
+    otpauth_url: getTOTPAuthUrl(userEmail, secret.base32),
+  };
+}
+
+async function generateQRCodeDataURL(otpauthUrl) {
+  return QRCode.toDataURL(otpauthUrl, {
+    errorCorrectionLevel: 'M',
+    margin: 2,
+    scale: 6,
+  });
+}</pre>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span class="flow-step-num" style="width: 28px; height: 28px; font-size: 0.85rem;">2</span>
+          Encrypt Secrets at Rest with AES-256-GCM
+        </h3>
+        <p style="font-size: 0.875rem; margin: 0.5rem 0;">
+          Never save raw Base32 keys in database documents. Encrypt them using AES-256 authenticated encryption:
+        </p>
+        <div class="code-container">
+          <div class="code-header">
+            <span>utils/cryptoUtil.js</span>
+            <button type="button" data-copy="#codeStep2">Copy</button>
+          </div>
+          <pre class="code-block" id="codeStep2">const crypto = require('crypto');
+
+const ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 12; // 96 bits for GCM
+
+function getEncryptionKey() {
+  return crypto.createHash('sha256').update(process.env.ENCRYPTION_KEY).digest();
+}
+
+function encrypt(text) {
+  if (!text) return null;
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv(ALGORITHM, getEncryptionKey(), iv);
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const authTag = cipher.getAuthTag().toString('hex');
+  return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+}
+
+function decrypt(encryptedString) {
+  if (!encryptedString) return null;
+  const [ivHex, authTagHex, encryptedData] = encryptedString.split(':');
+  const decipher = crypto.createDecipheriv(ALGORITHM, getEncryptionKey(), Buffer.from(ivHex, 'hex'));
+  decipher.setAuthTag(Buffer.from(authTagHex, 'hex'));
+  let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}</pre>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span class="flow-step-num" style="width: 28px; height: 28px; font-size: 0.85rem;">3</span>
+          Verify OTP Code and Activate 2FA
+        </h3>
+        <p style="font-size: 0.875rem; margin: 0.5rem 0;">
+          Verify the 6-digit code against the decrypted secret with clock drift tolerance:
+        </p>
+        <div class="code-container">
+          <div class="code-header">
+            <span>controllers/twoFactorController.js</span>
+            <button type="button" data-copy="#codeStep3">Copy</button>
+          </div>
+          <pre class="code-block" id="codeStep3">function verifyTOTPToken(secret, token) {
+  if (!secret || !token) return false;
+  return speakeasy.totp.verify({
+    secret,
+    encoding: 'base32',
+    token: String(token).trim(),
+    window: 1, // allows +/- 30 seconds drift (90 seconds total)
+  });
+}
+
+// In verify-setup controller:
+const isValid = verifyTOTPToken(tempSecret, token);
+if (!isValid) {
+  req.flash('error', 'Invalid verification code.');
+  return res.redirect('/2fa/setup');
+}
+
+// Promote temporary secret to active secret
+user.twoFactorSecret = user.temporaryTwoFactorSecret;
+user.temporaryTwoFactorSecret = null;
+user.twoFactorEnabled = true;
+await user.save();</pre>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span class="flow-step-num" style="width: 28px; height: 28px; font-size: 0.85rem;">4</span>
+          Generate &amp; Hash Single-Use Recovery Codes
+        </h3>
+        <p style="font-size: 0.875rem; margin: 0.5rem 0;">
+          Generate 10 human-readable backup codes. Store only their bcrypt hashes in MongoDB:
+        </p>
+        <div class="code-container">
+          <div class="code-header">
+            <span>services/recoveryCodeService.js</span>
+            <button type="button" data-copy="#codeStep4">Copy</button>
+          </div>
+          <pre class="code-block" id="codeStep4">const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+
+async function generateRecoveryCodes() {
+  const plainCodes = [];
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+
+  while (plainCodes.length &lt; 10) {
+    const bytes = crypto.randomBytes(8);
+    let code = '';
+    for (let i = 0; i &lt; 8; i++) {
+      if (i === 4) code += '-';
+      code += chars[bytes[i] % chars.length];
+    }
+    if (!plainCodes.includes(code)) plainCodes.push(code);
+  }
+
+  const hashedCodes = await Promise.all(
+    plainCodes.map(async (code) => ({
+      codeHash: await bcrypt.hash(code, 10),
+      used: false,
+      usedAt: null,
+    }))
+  );
+
+  return { plainCodes, hashedCodes };
+}</pre>
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span class="flow-step-num" style="width: 28px; height: 28px; font-size: 0.85rem;">5</span>
+          Mitigate Session Fixation &amp; Enforce Two-Step Login
+        </h3>
+        <p style="font-size: 0.875rem; margin: 0.5rem 0;">
+          Do not grant full session access upon primary password authentication. Regenerate the session ID at each stage:
+        </p>
+        <div class="code-container">
+          <div class="code-header">
+            <span>controllers/authController.js &amp; middleware/authMiddleware.js</span>
+            <button type="button" data-copy="#codeStep5">Copy</button>
+          </div>
+          <pre class="code-block" id="codeStep5">// Primary login:
+if (user.twoFactorEnabled) {
+  req.session.regenerate((err) => {
+    req.session.pendingUserId = user._id.toString();
+    req.session.is2FAVerified = false;
+    req.session.save(() => res.redirect('/2fa/verify'));
+  });
+  return;
+}
+
+// Verification middleware:
+function isAuthenticated(req, res, next) {
+  if (!req.session.userId || req.session.is2FAVerified !== true) {
+    if (req.session.pendingUserId) return res.redirect('/2fa/verify');
+    return res.redirect('/auth/login');
+  }
+  next();
+}</pre>
+        </div>
+      </div>
+
+      <!-- Step 6 -->
+      <div>
+        <h3 style="font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span class="flow-step-num" style="width: 28px; height: 28px; font-size: 0.85rem;">6</span>
+          Rate Limiting Against Brute-Force Attacks
+        </h3>
+        <p style="font-size: 0.875rem; margin: 0.5rem 0;">
+          Since 6-digit OTP codes have only 1,000,000 possible combinations, strict rate limiting is mandatory:
+        </p>
+        <div class="code-container">
+          <div class="code-header">
+            <span>middleware/rateLimiter.js</span>
+            <button type="button" data-copy="#codeStep6">Copy</button>
+          </div>
+          <pre class="code-block" id="codeStep6">const rateLimit = require('express-rate-limit');
+
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Max 10 attempts per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    req.flash('error', 'Too many incorrect OTP attempts. Paused for 15 minutes.');
+    res.redirect('/2fa/verify');
+  },
+});</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('layouts/footer') %>
